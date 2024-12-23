@@ -54,7 +54,7 @@ All generated images will be saved to the path `"outputs/{dataset name}/{prompt}
 
 
 ## Acknowledgements 
-This code is built on the codes from the [diffusers](https://github.com/huggingface/diffusers) library, the [Prompt-to-Prompt](https://github.com/google/prompt-to-prompt/) codebase, the [Attend&Excite](https://github.com/yuval-alaluf/Attend-and-Excite), the [CONFORM](https://github.com/gemlab-vt/CONFORM) and the [INITNO](https://github.com/xiefan-guo/initno).
+This code is built on the codes from [diffusers](https://github.com/huggingface/diffusers) library, [Prompt-to-Prompt](https://github.com/google/prompt-to-prompt/), [Attend&Excite](https://github.com/yuval-alaluf/Attend-and-Excite), [CONFORM](https://github.com/gemlab-vt/CONFORM) and [INITNO](https://github.com/xiefan-guo/initno).
 
 ## Citation
 If you use this code for your research, please cite the following work: 
