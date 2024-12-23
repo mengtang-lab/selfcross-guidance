@@ -14,7 +14,7 @@ SD15_VERSION    = "runwayml/stable-diffusion-v1-5"
 SD21_VERSION    = "stabilityai/stable-diffusion-2-1"
 token_indices   = []
 dataset         = "animals"
-
+run_sd          = True
 def Convert(string):
     li = list(string.split(" "))
     return li
@@ -38,6 +38,8 @@ def main():
         run_initno = False  # for sd2 initno and attend&excite don't work well
     else:
         raise Exception("model_choice should be among SD14 , SD15, SD21.")
+
+    if run_sd ==True: run_initno = False
 
     with open('prompts.txt') as f:
         data = f.read()
@@ -88,7 +90,7 @@ def main():
             np.random.seed(SEED)
             images = pipe(prompt=PROMPT,token_indices=token_indices,guidance_scale=7.5,generator=generator,
                           num_inference_steps=50,max_iter_to_alter=max_iter_to_alter, attn_res=attn_res,
-                          result_root=result_root,K=16,seed=SEED,run_sd=False,run_initno=run_initno).images
+                          result_root=result_root,K=16,seed=SEED,run_sd=run_sd,run_initno=run_initno).images
             images[0].save(path +f"/{SEED}.png")
 
 
