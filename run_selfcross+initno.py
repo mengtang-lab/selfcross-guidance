@@ -1,7 +1,7 @@
 import os
 import torch
 import json
-from pipelines.pipeline_sd_initno import SelfCrossInitNOPipeline
+from pipelines.pipeline_sc_initno import SelfCrossInitNOPipeline
 import numpy as np
 import random
 
