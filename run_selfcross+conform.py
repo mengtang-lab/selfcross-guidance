@@ -5,7 +5,7 @@ import torch
 import random
 import numpy as np
 from diffusers import StableDiffusionPipeline
-from pipelines.pipeline_sd_conform import SelfCrossConformPipeline
+from pipelines.pipeline_sc_conform import SelfCrossConformPipeline
 sys.path.append('.')
 
 model_choice    = "SD21" #, "SD15", "SD21"
