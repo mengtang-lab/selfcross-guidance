@@ -46,8 +46,8 @@ python run_selfcross+initno.py
 Notes:
 
 - To apply Stable Diffusion 2.1, specify: `model_choice = "SD21"` at the beginning of `run_selfcross+initno.py` or `run_selfcross+conform.py` script.
-- You may want to change the seeds by rewrite the seeds.txt.
-- You may want to change the prompts by rewrite the prompts.txt.
+- You may want to change the seeds by rewriting the seeds.txt.
+- You may want to change the prompts by rewriting the prompts.txt.
 - Currently, the indices are set automatically according to the dataset provided by Attend&Excite paper. You may want to try different indices based on your own datasets. To do this, you can change `token_groups` in `run_selfcross+conform.py` script, or `token_indices` in `run_selfcross+initno.py`.
 
 All generated images will be saved to the path `"outputs/{dataset name}/{prompt}"`. All results of attention maps will be saved to the path `"attentions/{dataset name}/{prompt}"`.
