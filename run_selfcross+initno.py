@@ -14,7 +14,7 @@ SD15_VERSION    = "runwayml/stable-diffusion-v1-5"
 SD21_VERSION    = "stabilityai/stable-diffusion-2-1"
 token_indices   = []
 dataset         = "animals"
-run_sd          = True
+run_sd          = False
 def Convert(string):
     li = list(string.split(" "))
     return li
