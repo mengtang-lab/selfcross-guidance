@@ -7,7 +7,7 @@ Diffusion models have achieved unprecedented fidelity and diversity for synthesi
 
 
 ![Example images using different methods](examples.png "Example images using different methods")
-![More example images using different methods](example2.png "More example images using different methods")
+
 
 [PDF](https://arxiv.org/abs/2411.18936)
 
@@ -15,6 +15,8 @@ Diffusion models have achieved unprecedented fidelity and diversity for synthesi
 
 ## Description  
 Official implementation of our Self-Cross Diffusion Guidance paper. 
+
+![More example images using different methods](example2.png "More example images using different methods")
 
 ## Setup
 
