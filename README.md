@@ -3,13 +3,12 @@
 > Weimin Qiu, Jieke Wang, Meng Tang  
 > University of California Merced
 
+[arXiv](https://arxiv.org/abs/2411.18936)
+
 Diffusion models have achieved unprecedented fidelity and diversity for synthesizing image, video, 3D assets, etc. However, subject mixing is a known and unresolved issue for diffusion-based image synthesis, particularly for synthesizing multiple similar-looking subjects. We propose Self-Cross diffusion guidance to penalize the overlap between cross-attention maps and aggregated self-attention maps. Compared to previous methods based on self-attention or cross-attention alone, our self-cross guidance is more effective in eliminating subject mixing. What's more, our guidance addresses mixing for all relevant patches of a subject beyond the most discriminant one, e.g., beak of a bird. We aggregate self-attention maps of automatically selected patches for a subject to form a region that the whole subject attends to. Our method is training-free and can boost the performance of any transformer-based diffusion model such as Stable Diffusion. We also release a more challenging benchmark with many text prompts of similar-looking subjects and utilize GPT-4o for automatic and reliable evaluation. Extensive qualitative and quantitative results demonstrate the effectiveness of our Self-Cross guidance.
 
 
 ![Example images using different methods](examples.png "Example images using different methods")
-
-
-[PDF](https://arxiv.org/abs/2411.18936)
 
 
 
@@ -46,8 +45,21 @@ python run_selfcross+initno.py
 
 After generation, you can evaluate images with the `compute_text-to-image_similarity.py` or `compute_text-to-text_similarity.py` script. For example,
 ```
-python run_selfcross+initno.py 
+python compute_text-to-image_similarity.py
 ```
+
+## Evaluate with GPT4o
+
+To evaluate with GPT4o, enter the `API_KEY` in `eval_gpt4o.py` then run
+```
+python eval_gpt4o.py --dataset animal-animal --image_root DIR_TO_IMAGES  --output_dir OUTPUT_DIR 
+```
+Possible options for `--dataset` are `animal-animal`, `animal-object`, `object-object`, and `similar-subjects`. 
+After the yaml file is generated, you can run statistics to get the numbers in Table 1
+```
+python eval_yaml.py --yaml_filename YAML_FILENAME
+```
+
 
 Notes:
 
