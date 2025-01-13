@@ -59,6 +59,7 @@ After the yaml file is generated, you can run statistics to get the numbers in T
 ```
 python eval_yaml.py --yaml_filename YAML_FILENAME
 ```
+We also upload the yaml files under the directory eval_results.
 
 
 Notes:
