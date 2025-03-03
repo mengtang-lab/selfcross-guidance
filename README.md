@@ -1,4 +1,4 @@
-# Self-Cross Diffusion Guidance for Text-to-Image Synthesis of Similar Subjects
+# Self-Cross Diffusion Guidance for Text-to-Image Synthesis of Similar Subjects (CVPR2025)
 
 > Weimin Qiu, Jieke Wang, Meng Tang  
 > University of California Merced
