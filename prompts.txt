@@ -1,4 +1,28 @@
-{
+{   
+    "TSD": [
+        "a tiger and a lion and a leopard",
+        "a horse and a donkey and zebra",
+        "a beagle and a collie and a husky",
+        "a chicken and a duck and a goose",
+        "a eagle and a owl and a seagull",
+        "a parrot and a pigeon and a sparrow",
+        "a snake and a lizard and a turtle",
+        "a shark and a whale and a crocodile",
+        "a sunflower and a daisy and a dandelion",
+        "a bus and a truck and a jeep",
+        "a pug and a corgi and a chihuahua",
+        "a orca and a dolphin and a seal",
+        "a basketball and a volleyball and a baseball",
+        "a bike and a scooter and a skateboard",
+        "a cat and a tiger and a rabbit",
+        "an apple and a banana and an orange",
+        "a tomato and an apple and a peach",
+        "a bear and a wolf and a fox",
+        "a carrot and a potato and a parsnip",
+        "a deer and a llama and a camel",
+        "a squirrel and a rabbit and a raccoon",
+        "a watermelon and a muskmelon and a coconut"
+    ],
     "animals": [
         "a bear and a frog",
         "a dog and a horse",
