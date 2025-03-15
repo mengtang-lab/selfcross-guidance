@@ -79,12 +79,10 @@ This code is built on the codes from [diffusers](https://github.com/huggingface/
 ## Citation
 If you use this code for your research, please cite the following work: 
 ```
-@misc{selfcross,
-      title={Self-Cross Diffusion Guidance for Text-to-Image Synthesis of Similar Subjects}, 
-      author={Weimin Qiu and Jieke Wang and Meng Tang},
-      year={2024},
-      eprint={2411.18936},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@inproceedings{2025selfcross,
+  author    = {Weimin, Qiu and Jieke, Wang and Meng, Tang},
+  title     = {Self-Cross Diffusion Guidance for Text-to-Image Synthesis of Similar Subjects},
+  booktitle   = {CVPR},
+  year      = {2025},
 }
 ```
