@@ -1,5 +1,5 @@
 {   
-    "TSD": [
+    "SSD-3": [
         "a tiger and a lion and a leopard",
         "a horse and a donkey and zebra",
         "a beagle and a collie and a husky",
@@ -91,7 +91,7 @@
         "a cat and a rat",
         "a elephant and a rat"
     ],
-    "similar": [
+    "SSD-2": [
         "a cheetah and a panther",
         "a leopard and a tiger",
         "a mastiff and a husky",
