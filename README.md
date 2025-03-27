@@ -20,7 +20,7 @@ Official implementation of our Self-Cross Diffusion Guidance paper.
 ## Setup
 
 ### Dataset  
-In the prompt.txt file, we have a new dataset for text-to-image synthesis. It contains two subsets with similar subjects. [SSD-2](https://github.com/huggingface/diffusers) contains prompts with two similar subjects. [SSD-3](https://github.com/huggingface/diffusers) contains prompts with three similar subjects.
+In the prompt.txt file, we have a new dataset for text-to-image synthesis. It contains two subsets with similar subjects. [SSD-2](https://github.com/mengtang-lab/selfcross-guidance/blob/main/prompts.txt) contains prompts with two similar subjects. [SSD-3](https://github.com/mengtang-lab/selfcross-guidance/blob/main/prompts.txt) contains prompts with three similar subjects.
 
 
 ### Environment
