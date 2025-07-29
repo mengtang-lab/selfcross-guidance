@@ -672,13 +672,16 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
     def register_attention_control(self):
         attn_procs = {}
         cross_att_count = 0
-        for name in self.transformer.attn_processors.keys():
-            name.startswith(f"transformer_block.{cross_att_count}.attn")
-            place_in_transformer = cross_att_count
-            cross_att_count += 1
-            attn_procs[name] = AttnProcessor(attnstore=self.attention_store, place_in_transformer=place_in_transformer,from_where=self.from_where)
+        for name in self.transformer.attn_processors.keys():    
+            if cross_att_count in self.from_where:
+                place_in_transformer = cross_att_count
+                attn_procs[name] = AttnProcessor(attnstore=self.attention_store, place_in_transformer=place_in_transformer,from_where=self.from_where)
+            else:
+                attn_procs[name] = self.transformer.attn_processors[name]
+            if name.startswith(f"transformer_blocks.{cross_att_count}.attn"): 
+                cross_att_count += 1      
         self.transformer.set_attn_processor(attn_procs)
-        self.attention_store.num_att_layers = len(self.from_where)*2 # cross_att_count*2  #
+        self.attention_store.num_att_layers = len(self.from_where)*2
 
     @staticmethod
     def _update_latent(latents: torch.Tensor, loss: torch.Tensor, step_size: float) -> torch.Tensor:
