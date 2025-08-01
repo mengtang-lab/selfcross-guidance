@@ -1451,6 +1451,11 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                                 K=K,
                                 attention_res=attention_res,
                                 smooth_attentions=True)  # show average result of top K maps
+                            # reduce gpu memory
+                            del cross_attention_maps
+                            del self_attention_maps
+                            # Optional: Clear cache to free memory immediately
+                            torch.cuda.empty_cache()
                             cross_attention_map_numpy_list.append(cross_attention_maps_numpy)
                             self_attention_map_numpy_list.append(self_attention_maps_numpy)
 
