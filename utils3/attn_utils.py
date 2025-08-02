@@ -127,12 +127,16 @@ def fn_show_attention_plus(
     indices = [index - 1 for index in indices]
     cross_attention_map_list = []
     cross_attention_map_list_for_show = []
+    self_attention_map_top_list = []
     otsu_masks = []
     for i in indices:
         cross_attention_map_per_token = cross_attention_maps[:, :, i]
         if smooth_attentions: cross_attention_map_per_token = fn_smoothing_func(cross_attention_map_per_token)
         topk_coord_list, topk_value_list = fn_get_topk(cross_attention_map_per_token, K=K)
+        self_attn_map_top1 = self_attention_maps[topk_coord_list[0][0], topk_coord_list[0][1]].view(attention_res, attention_res).contiguous()
+        # print(self_attn_map_top1.shape, self_attention_maps.shape)
         cross_attention_map_list_for_show.append(cross_attention_map_per_token.to(torch.float16).cpu().detach().numpy())
+        self_attention_map_top_list.append(self_attn_map_top1.to(torch.float16).cpu().detach().numpy())
         cross_attention_map_list.append(cross_attention_map_per_token)
 
         # -----------------------------------
@@ -178,7 +182,7 @@ def fn_show_attention_plus(
     # cross_attention_map_numpy = torch.cat(cross_attention_map_list, dim=0).cpu().detach().numpy()
     # self_attention_map_numpy = torch.cat(self_attention_map_list, dim=0).cpu().detach().numpy()
 
-    return cross_attention_map_list_for_show, self_attention_map_list  #, self_attention_map_list_list
+    return cross_attention_map_list_for_show, self_attention_map_list, self_attention_map_top_list  
 
 
 import cv2
