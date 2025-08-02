@@ -681,7 +681,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
             if name.startswith(f"transformer_blocks.{cross_att_count}.attn"): 
                 cross_att_count += 1      
         self.transformer.set_attn_processor(attn_procs)
-        self.attention_store.num_att_layers = len(self.from_where)*2
+        self.attention_store.num_att_layers = len(self.from_where)*2 
 
     @staticmethod
     def _update_latent(latents: torch.Tensor, loss: torch.Tensor, step_size: float) -> torch.Tensor:
@@ -1327,6 +1327,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
             generator,
             latents,
         )
+        print(latents.shape)
 
         self.attention_store = AttentionStore()
         self.register_attention_control()
@@ -1411,7 +1412,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
             pooled_prompt_embeds[batch_size * num_images_per_prompt:] if self.do_classifier_free_guidance else pooled_prompt_embeds
         )
         # store attention map
-        cross_attention_map_numpy_list, self_attention_map_numpy_list = [], []
+        cross_attention_map_numpy_list, self_attention_map_numpy_list, self_attention_map_top_numpy_list = [], [], []
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
                 if self.interrupt:
@@ -1443,21 +1444,25 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                                 from_where=self.from_where, is_cross=True)
                             self_attention_maps = self.attention_store.aggregate_attention(
                                 from_where=self.from_where, is_cross=False)
-
-                            cross_attention_maps_numpy, self_attention_maps_numpy = fn_show_attention_plus(
+                            cross_attention_maps = cross_attention_maps.cpu()
+                            self_attention_maps = self_attention_maps.cpu()
+                            
+                            cross_attention_maps_numpy, self_attention_maps_numpy, self_attention_map_top_list = fn_show_attention_plus(
                                 cross_attention_maps=cross_attention_maps,
                                 self_attention_maps=self_attention_maps,
                                 indices=index,
                                 K=K,
                                 attention_res=attention_res,
                                 smooth_attentions=True)  # show average result of top K maps
-                            # reduce gpu memory
+                            
                             del cross_attention_maps
                             del self_attention_maps
                             # Optional: Clear cache to free memory immediately
                             torch.cuda.empty_cache()
+
                             cross_attention_map_numpy_list.append(cross_attention_maps_numpy)
                             self_attention_map_numpy_list.append(self_attention_maps_numpy)
+                            self_attention_map_top_numpy_list.append(self_attention_map_top_list)
 
                          # If this is an iterative refinement step, verify we have reached the desired threshold for all
                         if i < max_iter_to_alter and (i == 4 or i == 10) and (
@@ -1466,7 +1471,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                                  latents=latent,
                                  indices=index,
                                  cross_attn_loss=cross_attn_loss,
-                                 joint_loss=joint_loss,
+                                #  joint_loss=joint_loss,
                                  self_cross_attn_loss=self_cross_attn_loss,
                                  threshold=0.8,
                                  text_embeddings=text_embedding,
@@ -1537,33 +1542,34 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                 if XLA_AVAILABLE:
                     xm.mark_step()
 
-            # show attention map at each timestep
             if result_root is not None:
-                # os.makedirs('{:s}/{:s}'.format(result_root,prompt), exist_ok=True)
-                # cross_attention_maps_numpy, self_attention_maps_numpy
-                fig = plt.figure(figsize=(len(cross_attention_map_numpy_list) * 1.5, 6))
-                rows = len(token_indices[0]) * 2
+            # os.makedirs('{:s}/{:s}'.format(result_root,prompt), exist_ok=True)
+            # cross_attention_maps_numpy, self_attention_maps_numpy
+                rows = len(token_indices[0])
                 columns = len(cross_attention_map_numpy_list)
-                for j in range(len(cross_attention_map_numpy_list)):
+                numlists = 3 # number of lists to be shown
+                fig = plt.figure(figsize=(columns * 1.5, rows*numlists))
+                for j in range(columns):
                     plt.title("t_{}".format(j))
-                    fig.add_subplot(rows, columns, j + 1)
-                    plt.imshow(cross_attention_map_numpy_list[j][0], cmap='viridis')
-                    plt.axis('off')
-                    fig.add_subplot(rows, columns, columns + j + 1)
-                    plt.imshow(cross_attention_map_numpy_list[j][1], cmap='viridis')
-                    plt.axis('off')
-                    fig.add_subplot(rows, columns, 2 * columns + j + 1)
-                    plt.imshow(cross_attention_map_numpy_list[j][2], cmap='viridis')
-                    plt.axis('off')
-                    fig.add_subplot(rows, columns, 3 * columns + j + 1)
-                    plt.imshow(self_attention_map_numpy_list[j][0], cmap='viridis')
-                    plt.axis('off')
-                    fig.add_subplot(rows, columns, 4 * columns + j + 1)
-                    plt.imshow(self_attention_map_numpy_list[j][1], cmap='viridis')
-                    plt.axis('off')
-                    fig.add_subplot(rows, columns, 5 * columns + j + 1)
-                    plt.imshow(self_attention_map_numpy_list[j][2], cmap='viridis')
-                    plt.axis('off')
+                    for k in range(rows):
+                        # print(j,k,k * columns + j + 1)
+                        fig.add_subplot(rows*numlists, columns, k * columns + j + 1)
+                        plt.imshow(cross_attention_map_numpy_list[j][k], cmap='viridis')
+                        plt.axis('off')
+                for j in range(columns):
+                    plt.title("t_{}".format(j))
+                    for k in range(rows):
+                        # print(j,k,k * columns + j + rows*columns+1)
+                        fig.add_subplot(rows*numlists, columns, k * columns + j + 1 + rows*columns)
+                        plt.imshow(self_attention_map_top_numpy_list[j][k], cmap='viridis')
+                        plt.axis('off')
+                for j in range(columns):
+                    plt.title("t_{}".format(j))
+                    for k in range(rows):
+                        # print(j,k,k * columns + j + 2*rows*columns+1)
+                        fig.add_subplot(rows*numlists, columns, k * columns + j + 1 + 2*rows*columns)
+                        plt.imshow(self_attention_map_numpy_list[j][k], cmap='viridis')
+                        plt.axis('off')
                 plt.savefig(f"./{result_root}/{seed}.jpg", bbox_inches='tight', pad_inches=0.2)
                 plt.close()
 
