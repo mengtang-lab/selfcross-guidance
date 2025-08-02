@@ -1392,7 +1392,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                         indices=token_indices[0],
                         text_embeddings=prompt_embeds,
                         pooled_text_embeddings=pooled_prompt_embeds,
-                        max_step=28,
+                        max_step=10,
                         num_inference_steps=num_inference_steps,
                         device=device,
                         guidance_scale=guidance_scale,
@@ -1452,15 +1452,15 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                                 attention_res=attention_res,
                                 smooth_attentions=True)  # show average result of top K maps
                             # reduce gpu memory
-                            # del cross_attention_maps
-                            # del self_attention_maps
-                            # # Optional: Clear cache to free memory immediately
-                            # torch.cuda.empty_cache()
+                            del cross_attention_maps
+                            del self_attention_maps
+                            # Optional: Clear cache to free memory immediately
+                            torch.cuda.empty_cache()
                             cross_attention_map_numpy_list.append(cross_attention_maps_numpy)
                             self_attention_map_numpy_list.append(self_attention_maps_numpy)
 
                          # If this is an iterative refinement step, verify we have reached the desired threshold for all
-                        """if i < max_iter_to_alter and (i == 4 or i == 10) and (
+                        if i < max_iter_to_alter and (i == 4 or i == 10) and (
                                  cross_attn_loss > 0.2 or self_cross_attn_loss > 0.3) and not run_sd:
                              joint_loss, cross_attn_loss, self_cross_attn_loss, latent = self._perform_iterative_refinement_step(
                                  latents=latent,
@@ -1476,7 +1476,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                                  K=K,
                                  attention_res=attention_res,
                                  from_where=self.from_where
-                             )"""
+                             )
 
                         # Perform gradient update
                         if i < max_iter_to_alter and not run_sd:
