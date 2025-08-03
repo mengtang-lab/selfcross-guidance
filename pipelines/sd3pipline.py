@@ -41,7 +41,7 @@ from diffusers.pipelines.stable_diffusion_3.pipeline_output import StableDiffusi
 from tqdm import tqdm
 from torch.optim.adam import Adam
 from utils3.ptp_utils import AttnProcessor, AttentionStore
-from utils3.attn_utils import fn_smoothing_func, fn_get_topk, fn_clean_mask, fn_get_otsu_mask, fn_show_attention_plus
+from utils3.attn_utils import fn_smoothing_func, fn_get_topk, fn_clean_mask, fn_get_otsu_mask, fn_show_attention_plus_2
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import random
@@ -889,13 +889,13 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
         self_cross_attn_loss = 0
         number_self_cross_loss_pair = 0
         for i in range(number_token):
+            cross_attention_map = cross_attention_map_list[i]#.detach().clone()
+            cross_attention_map = cross_attention_map / (torch.sum(cross_attention_map)+ 0.0001)
             for j in range(number_token):
                 if i == j:
                     continue
                 else:
                     self_attention_map = self_attention_map_list[j] / (torch.sum(self_attention_map_list[j])+ 0.0001)
-                    cross_attention_map = cross_attention_map_list[i]#.detach().clone()
-                    cross_attention_map = cross_attention_map / (torch.sum(cross_attention_map)+ 0.0001)
                     self_cross_attn_loss_ij = torch.min(self_attention_map, cross_attention_map).sum()
                     number_self_cross_loss_pair = number_self_cross_loss_pair + 1
                     self_cross_attn_loss = self_cross_attn_loss + self_cross_attn_loss_ij
@@ -906,7 +906,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
         # -------------
         if cross_attn_loss > 0.5:
             self_cross_attn_loss = self_cross_attn_loss * 0
-        joint_loss = cross_attn_loss * 1. + clean_cross_attention_loss * 1. + self_cross_attn_loss
+        joint_loss = cross_attn_loss + self_cross_attn_loss + clean_cross_attention_loss * 0.1
 
         return joint_loss, cross_attn_loss, self_cross_attn_loss
 
@@ -969,26 +969,6 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
         cross_attn_loss_list = [max(0 * curr_max, 1.0 - curr_max) for curr_max in topk_average_cross_attn_value_list]
         cross_attn_loss = max(cross_attn_loss_list)
 
-        # ------------------------------
-        # cross attention alignment loss
-        # ------------------------------
-        alpha = 0.9
-        if self.cross_attention_maps_cache is None:
-            self.cross_attention_maps_cache = cross_attention_maps.detach().clone()
-        else:
-            self.cross_attention_maps_cache = self.cross_attention_maps_cache * alpha + cross_attention_maps.detach().clone() * (
-                    1 - alpha)
-
-        cross_attn_alignment_loss = 0
-        for i in indices:
-            cross_attention_map_cur_token = cross_attention_maps[:, :, i]
-            if smooth_attentions: cross_attention_map_cur_token = fn_smoothing_func(cross_attention_map_cur_token)
-            cross_attention_map_cur_token_cache = self.cross_attention_maps_cache[:, :, i]
-            if smooth_attentions: cross_attention_map_cur_token_cache = fn_smoothing_func(
-                cross_attention_map_cur_token_cache)
-            cross_attn_alignment_loss = cross_attn_alignment_loss + torch.nn.L1Loss()(cross_attention_map_cur_token,
-                                                                                      cross_attention_map_cur_token_cache)
-
         # ---------------------------------
         # prepare aggregated self attn maps
         # ---------------------------------
@@ -1013,33 +993,89 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                             self_attn_map_cur_token = self_attn_map_cur_token + cross_attn_value_cur_token * self_attn_map_cur_position
             self_attention_map_list.append(self_attn_map_cur_token)
 
-        # ----------------------------------
-        # self-cross-attention conflict loss
-        # ----------------------------------
+        # -------------------------------
+        # cross attention alignment loss
+        # -------------------------------
         if (len(self_attention_map_list) != len(cross_attention_map_list)):
             print("numbers of cross and self don't match!")
-        self_cross_attn_loss = 0
-        number_self_cross_loss_pair = 0
+        self_attention_maps = torch.stack(self_attention_map_list)
+        # print(self_attention_maps.shape)
+        cross_attention_maps = torch.stack(cross_attention_map_list)
+        # print(cross_attention_maps.shape)
+        alpha = 0.9
+        if self.cross_attention_maps_cache is None:
+            self.cross_attention_maps_cache = cross_attention_maps.detach().clone()
+            self.self_attention_maps_cache = self_attention_maps.detach().clone()
+        else:
+            self.cross_attention_maps_cache = self.cross_attention_maps_cache * alpha + cross_attention_maps.detach().clone() * (1 - alpha)
+            self.self_attention_maps_cache = self.self_attention_maps_cache * alpha + self_attention_maps.detach().clone() * (1 - alpha)
+
+        cross_attn_alignment_loss = 0
         for i in range(number_token):
+            cross_attention_map_cur_token = cross_attention_maps[i, :, :]
+            # if smooth_attentions: cross_attention_map_cur_token = fn_smoothing_func(cross_attention_map_cur_token)
+            cross_attention_map_cur_token_cache = self.cross_attention_maps_cache[i, :, :]
+            # if smooth_attentions: cross_attention_map_cur_token_cache = fn_smoothing_func(cross_attention_map_cur_token_cache)
+            cross_attn_alignment_loss = cross_attn_alignment_loss + torch.nn.L1Loss()(cross_attention_map_cur_token,
+                                                                                      cross_attention_map_cur_token_cache)
+
+        # -------------------------------------------------
+        # self-cross-attention conflict loss with history
+        # -------------------------------------------------
+        
+        self_cross_attn_loss = 0
+        number_self_cross_pair = 0
+        for i in range(number_token):
+            cross_attention_map = cross_attention_maps[i, :, :]  # .detach().clone()
+            cross_attention_map = cross_attention_map / (torch.sum(cross_attention_map) + 0.0001)
             for j in range(number_token):
                 if i == j:
                     continue
                 else:
-                    self_attention_map = self_attention_map_list[j] / (torch.sum(self_attention_map_list[j]) + 0.0001)
-                    cross_attention_map = cross_attention_map_list[i]  # .detach().clone()
-                    cross_attention_map = cross_attention_map / (torch.sum(cross_attention_map) + 0.0001)
+                    self_attention_map = self_attention_maps[j, :, :] / (torch.sum(self_attention_maps[j, :, :]) + 0.0001)
                     self_cross_attn_loss_ij = torch.min(self_attention_map, cross_attention_map).sum()
-                    number_self_cross_loss_pair = number_self_cross_loss_pair + 1
+                    number_self_cross_pair = number_self_cross_pair + 1
                     self_cross_attn_loss = self_cross_attn_loss + self_cross_attn_loss_ij
-        if number_self_cross_loss_pair > 0: self_cross_attn_loss = self_cross_attn_loss / number_self_cross_loss_pair
+        if number_self_cross_pair > 0: self_cross_attn_loss = self_cross_attn_loss / number_self_cross_pair
+        
+        self_cross_attn_loss_1 = 0
+        number_self_cross_pair_1 = 0
+        for i in range(number_token):
+            cross_attention_map_cache = self.cross_attention_maps_cache[i, :, :]
+            cross_attention_map_cache = cross_attention_map_cache / (torch.sum(cross_attention_map_cache) + 0.0001)
+            for j in range(number_token):
+                if i == j:
+                    continue
+                else:
+                    self_attention_map = self_attention_maps[j, :, :] / (torch.sum(self_attention_maps[j, :, :]) + 0.0001)
+                    self_cross_attn_loss_ij_1 = torch.min(self_attention_map, cross_attention_map_cache).sum()
+                    number_self_cross_pair_1 = number_self_cross_pair_1 + 1
+                    self_cross_attn_loss_1 = self_cross_attn_loss_1 + self_cross_attn_loss_ij_1
+        if number_self_cross_pair_1 > 0: self_cross_attn_loss_1 = self_cross_attn_loss_1 / number_self_cross_pair_1
+
+        self_cross_attn_loss_2 = 0
+        number_self_cross_pair_2 = 0
+        for i in range(number_token):
+            self_attention_map_cache = self.self_attention_maps_cache[i, :, :]
+            self_attention_map_cache = self_attention_map_cache / (torch.sum(self_attention_map_cache) + 0.0001)
+            for j in range(number_token):
+                if i == j:
+                    continue
+                else:
+                    cross_attention_map = cross_attention_maps[j, :, :] / (torch.sum(cross_attention_maps[j, :, :]) + 0.0001)
+                    self_cross_attn_loss_ij_2 = torch.min(self_attention_map_cache, cross_attention_map).sum()
+                    number_self_cross_pair_2 = number_self_cross_pair_2 + 1
+                    self_cross_attn_loss_2 = self_cross_attn_loss_2 + self_cross_attn_loss_ij_2
+        if number_self_cross_pair_2 > 0: self_cross_attn_loss_2 = self_cross_attn_loss_2 / number_self_cross_pair_2
 
         # -------------
         # final losses
         # -------------
+        self_cross_attn_loss = self_cross_attn_loss + self_cross_attn_loss_1 +self_cross_attn_loss_2
         if cross_attn_loss > 0.5:
             self_cross_attn_loss = self_cross_attn_loss * 0
-        joint_loss = cross_attn_loss * 1. + clean_cross_attention_loss * 0.1 + cross_attn_alignment_loss * 0.1 + self_cross_attn_loss
-        cross_attn_loss = cross_attn_loss + clean_cross_attention_loss * 0.1 + self_cross_attn_loss
+        joint_loss = cross_attn_loss * 1. + clean_cross_attention_loss * 0.1 + self_cross_attn_loss # + cross_attn_alignment_loss * 0.1 
+        # cross_attn_loss = cross_attn_loss + clean_cross_attention_loss * 0.1 + self_cross_attn_loss
 
         return joint_loss, cross_attn_loss, self_cross_attn_loss
 
@@ -1327,7 +1363,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
             generator,
             latents,
         )
-        print(latents.shape)
+        # print(latents.shape)
 
         self.attention_store = AttentionStore()
         self.register_attention_control()
@@ -1384,26 +1420,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                     print(
                         f'Optimization_succeed: {_optimization_succeed} - Attn score: {score.item():0.4f} - Round: {_round}')
                 optimized_latents_pool.sort()
-
-                if optimized_latents_pool[0][4] is True:
-                    latents = optimized_latents_pool[0][2]
-                else:
-                    optimized_latents, optimization_succeed, cross_self_attn_loss = self.fn_initno(
-                        latents=optimized_latents_pool[0][3],
-                        indices=token_indices[0],
-                        text_embeddings=prompt_embeds,
-                        pooled_text_embeddings=pooled_prompt_embeds,
-                        max_step=20,
-                        num_inference_steps=num_inference_steps,
-                        device=device,
-                        guidance_scale=guidance_scale,
-                        do_classifier_free_guidance=self.do_classifier_free_guidance,
-                        round=round,
-                        K=K,
-                        attention_res=attention_res,
-                        from_where=self.from_where
-                    )
-                    latents = optimized_latents
+                latents = optimized_latents_pool[0][2] 
 
         text_embeddings = (
             prompt_embeds[batch_size * num_images_per_prompt:] if self.do_classifier_free_guidance else prompt_embeds
@@ -1447,7 +1464,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                             cross_attention_maps = cross_attention_maps.cpu()
                             self_attention_maps = self_attention_maps.cpu()
                             
-                            cross_attention_maps_numpy, self_attention_maps_numpy, self_attention_map_top_list = fn_show_attention_plus(
+                            cross_attention_maps_numpy, self_attention_maps_numpy, self_attention_map_top_list = fn_show_attention_plus_2(
                                 cross_attention_maps=cross_attention_maps,
                                 self_attention_maps=self_attention_maps,
                                 indices=index,
@@ -1485,10 +1502,10 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
 
                         # Perform gradient update
                         if i < max_iter_to_alter and not run_sd:
-                            if cross_attn_loss != 0:
+                            if joint_loss != 0:
                                 latent = self._update_latent(
                                     latents=latent,
-                                    loss=cross_attn_loss,
+                                    loss=joint_loss,
                                     step_size=step_size[i],
                                 )
                             # logging.info(f"Iteration {i:02d} - cross loss: {cross_attn_loss:0.4f} - self loss: {self_attn_loss:0.4f}")
