@@ -1393,7 +1393,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
                         indices=token_indices[0],
                         text_embeddings=prompt_embeds,
                         pooled_text_embeddings=pooled_prompt_embeds,
-                        max_step=10,
+                        max_step=20,
                         num_inference_steps=num_inference_steps,
                         device=device,
                         guidance_scale=guidance_scale,
