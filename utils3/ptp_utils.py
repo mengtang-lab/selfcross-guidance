@@ -180,7 +180,7 @@ class AttnProcessor:
 
             # (1,24,4429,4429) -> (1,24,4096,333) -> (1,4096,333)
             # to save space we only take part of them
-            if attention_probs.requires_grad and self.place_in_transformer>4 and self.place_in_transformer<13:
+            if attention_probs.requires_grad and self.place_in_transformer in self.from_where: #self.place_in_transformer>4 and self.place_in_transformer<13:
                 cross_attn_clip1 = attention_probs[:, :, :image_length,
                                    image_length:image_length + 10]  # .cpu() image-text cross attention clip
                 cross_attn_clip2 = attention_probs[:, :, :image_length,
@@ -189,7 +189,7 @@ class AttnProcessor:
                 self.attnstore(cross_attn, True, self.place_in_transformer)
 
             # (1,24,4429,4429) -> (1,24,4096,4096) -> (1,4096,4096)
-            if attention_probs.requires_grad and self.place_in_transformer>4 and self.place_in_transformer<13:
+            if attention_probs.requires_grad and self.place_in_transformer in self.from_where: # self.place_in_transformer>4 and self.place_in_transformer<13:
                 self_attn = attention_probs[:, :, :image_length, :image_length]  # .cpu() image-image self attention
                 self_attn = torch.mean(self_attn, dim=1)
                 self.attnstore(self_attn, False, self.place_in_transformer)
