@@ -45,14 +45,14 @@ from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.pipelines.stable_diffusion_3.pipeline_output import StableDiffusion3PipelineOutput
 from tqdm import tqdm
 from torch.optim.adam import Adam
-from utils3.ptp_utils import AttnProcessor, AttentionStore, HeadAttnProcessor, HeadsAttentionStore
-from utils3.attn_utils import fn_smoothing_func, fn_get_topk, fn_clean_mask, fn_get_otsu_mask, fn_show_attention, \
+from utils3d.ptp_utils import AttnProcessor, AttentionStore, HeadAttnProcessor, HeadsAttentionStore
+from utils3d.attn_utils import fn_smoothing_func, fn_get_topk, fn_clean_mask, fn_get_otsu_mask, fn_show_attention, \
     compute_pca, fn_show_attention_plus_3
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import random
-from utils3.markov_map import create_markov_map_from_point
-from utils3.markov_util import adjust_temperature_and_ipf
+from utils3d.markov_map import create_markov_map_from_point
+from utils3d.markov_util import adjust_temperature_and_ipf
 
 if is_torch_xla_available():
     import torch_xla.core.xla_model as xm
